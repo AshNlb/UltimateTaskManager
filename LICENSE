@@ -1,0 +1,105 @@
+TaskFlow License
+Copyright (c) 2025 TaskFlow
+
+## Terms and Conditions
+
+### 1. Definitions
+
+"Software" refers to TaskFlow and all associated source code, documentation, and assets.
+
+"Use" means running, studying, and modifying the Software for personal or internal business purposes.
+
+"Distribute" means making the Software available to others.
+
+"Sell" means offering the Software or derivatives for monetary compensation or commercial gain.
+
+### 2. Grant of Rights
+
+Subject to the terms and conditions of this License, you are granted the following rights:
+
+#### ✅ YOU MAY:
+
+- **Use** the Software for personal, educational, or internal business purposes
+- **Modify** the Software to suit your needs
+- **Fork** the repository and create your own versions
+- **Use** the Software commercially in your own business (e.g., to manage your company's tasks)
+- **Study** the code to learn from it
+- **Share** your modifications with others under the same license terms
+
+#### ❌ YOU MAY NOT:
+
+- **Sell** the Software or any modified versions as a product or service
+- **Offer** the Software as a paid download, SaaS (Software as a Service), or hosted solution
+- **Sublicense** the Software for commercial distribution
+- **Claim** the Software as your own original work
+- **Remove** copyright notices or license information
+- **Use** the Software's name or branding to promote derivative works without permission
+
+### 3. Modifications and Derivatives
+
+You may create modifications and derivative works, provided that:
+
+1. You clearly mark your modifications as such
+2. You distribute modifications under this same license
+3. You do not sell or commercially distribute the modified versions
+4. You include a copy of this license with any distribution
+5. You credit the original authors
+
+### 4. Commercial Use Clarification
+
+**Permitted Commercial Use:**
+- Using the Software internally in your business to manage tasks
+- Deploying the Software on your company's private servers
+- Customizing the Software for your organization's needs
+
+**Prohibited Commercial Use:**
+- Selling the Software as a standalone product
+- Offering the Software as a paid service (SaaS)
+- Charging others to use, access, or download the Software
+- Including the Software in a commercial software bundle for sale
+- White-labeling the Software and selling it under a different name
+
+### 5. Attribution
+
+When distributing the Software or derivative works, you must:
+
+1. Include a copy of this license
+2. Provide credit to the original author
+3. Include a link to the original repository: https://github.com/yourusername/ultimate-task-manager
+4. State any significant changes made
+
+### 6. Contributions
+
+By submitting contributions (pull requests, issues, etc.) to the Software, you agree:
+
+1. Your contributions are made under the terms of this license
+2. You have the right to submit the contribution
+3. Your contributions may be included in the Software
+
+### 7. No Warranty
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+### 8. Termination
+
+Your rights under this license will terminate automatically if you violate any of its terms. Upon termination, you must cease all use and distribution of the Software.
+
+### 9. Questions and Commercial Licensing
+
+If you wish to use the Software in ways not permitted by this license (e.g., commercial distribution), please contact the author to negotiate a separate commercial license.
+
+Contact: [your.email@example.com]
+
+---
+
+**Summary:**
+
+✅ Free to use, modify, and fork
+✅ Can use in your business internally
+✅ Can learn from and share
+❌ Cannot sell or offer as a paid service
+❌ Cannot redistribute commercially
+
+This license ensures TaskFlow remains free and open for everyone while protecting against commercial exploitation.
