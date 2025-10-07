@@ -5,6 +5,30 @@ import { authenticate, AuthRequest } from '../middleware/auth';
 const router = express.Router();
 const prisma = new PrismaClient();
 
+// Rate limiting: 10 questions per user per day
+async function checkRateLimit(userId: string): Promise<{ allowed: boolean; remaining: number }> {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const todayQuestions = await prisma.chatHistory.count({
+    where: {
+      userId,
+      createdAt: {
+        gte: today,
+        lt: tomorrow,
+      },
+    },
+  });
+
+  const DAILY_LIMIT = 10;
+  const remaining = Math.max(0, DAILY_LIMIT - todayQuestions);
+  const allowed = todayQuestions < DAILY_LIMIT;
+
+  return { allowed, remaining };
+}
+
 // Simple Q&A assistant (uses task data to answer questions)
 router.post('/ask', authenticate, async (req: AuthRequest, res) => {
   try {
@@ -12,6 +36,16 @@ router.post('/ask', authenticate, async (req: AuthRequest, res) => {
 
     if (!question) {
       return res.status(400).json({ error: 'Question is required' });
+    }
+
+    // Check rate limit
+    const { allowed, remaining } = await checkRateLimit(req.userId!);
+
+    if (!allowed) {
+      return res.status(429).json({
+        error: 'Daily limit reached. You can ask up to 10 questions per day. Try again tomorrow!',
+        remaining: 0
+      });
     }
 
     // Get user's tasks
@@ -151,7 +185,10 @@ router.post('/ask', authenticate, async (req: AuthRequest, res) => {
       },
     });
 
-    res.json({ answer });
+    res.json({
+      answer,
+      remainingQuestions: remaining - 1
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Server error' });
@@ -207,6 +244,16 @@ router.get('/chat-history', authenticate, async (req: AuthRequest, res) => {
     });
 
     res.json(history);
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get remaining questions for today
+router.get('/remaining-questions', authenticate, async (req: AuthRequest, res) => {
+  try {
+    const { remaining } = await checkRateLimit(req.userId!);
+    res.json({ remaining, dailyLimit: 10 });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }

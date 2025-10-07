@@ -2,10 +2,11 @@
 
 This guide will help you deploy TaskFlow as a web application using Railway (backend) and Vercel (frontend).
 
-## Total Cost: $5/month
+## Total Cost: $5-15/month
 
 - **Railway**: $5/month (backend + PostgreSQL database)
 - **Vercel**: Free (frontend hosting)
+- **OpenAI API**: $0-10/month (protected by hard limit + rate limiting)
 
 ## Prerequisites
 
@@ -51,12 +52,24 @@ NODE_ENV=production
 PORT=5000
 ```
 
-Optional (for AI features):
+**Required for AI chatbot** (recommended):
 ```
 OPENAI_API_KEY=your-openai-api-key
-# OR
-ANTHROPIC_API_KEY=your-anthropic-api-key
 ```
+
+To get your OpenAI API key:
+1. Go to https://platform.openai.com/api-keys
+2. Sign up or log in
+3. Click "Create new secret key"
+4. Copy the key and add it to Railway environment variables
+5. **IMPORTANT**: Set usage limits at https://platform.openai.com/account/billing/limits
+   - Hard limit: $10/month (recommended)
+   - Soft limit: $5/month (get email alert)
+
+**Cost Protection:**
+- Backend has built-in rate limiting: 10 questions per user per day
+- OpenAI hard limit: Stops API automatically when limit is reached
+- Estimated cost: ~$1 per 1,000 questions
 
 ### 1.6 Run Database Migration
 1. In Railway backend service, go to "Settings" → "Deploy"
