@@ -153,6 +153,28 @@
             color: #667eea;
             text-decoration: none;
         }
+
+        .feedback-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: inline-block;
+            padding: 18px 40px;
+            font-size: 1.1em;
+            font-weight: 600;
+            text-decoration: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            z-index: 1000;
+        }
+
+        .feedback-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.6);
+        }
     </style>
 </head>
 <body>
@@ -193,5 +215,10 @@
             <p>Open Source &middot; <a href="https://github.com/AshNlb/UltimateTaskManager">View on GitHub</a></p>
         </footer>
     </div>
+    
+    <!-- Feedback Button -->
+    <a href="https://forms.gle/RzVwYP54Viq1fRVe7" class="feedback-btn" target="_blank" rel="noopener noreferrer">
+        💬 Feedback
+    </a>
 </body>
 </html>
