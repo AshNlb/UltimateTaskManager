@@ -7,6 +7,7 @@ export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [acceptedPolicy, setAcceptedPolicy] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -15,6 +16,12 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!acceptedPolicy) {
+      setError('You must accept the Privacy Policy to create an account');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -102,9 +109,31 @@ export default function Register() {
             </div>
 
             <div className="pt-2">
+              <label className="flex items-start space-x-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={acceptedPolicy}
+                  onChange={(e) => setAcceptedPolicy(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-white/10 bg-white/5 text-purple-600 focus:ring-purple-500 focus:ring-offset-gray-900 cursor-pointer"
+                />
+                <span className="text-sm text-gray-300 group-hover:text-gray-200 transition-colors">
+                  I agree to the{' '}
+                  <a
+                    href="https://ashnlb.github.io/UltimateTaskManager/privacy.html"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-purple-400 hover:text-purple-300 underline"
+                  >
+                    Privacy Policy
+                  </a>
+                </span>
+              </label>
+            </div>
+
+            <div className="pt-2">
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !acceptedPolicy}
                 className="group relative w-full flex justify-center py-3 px-4 text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-purple-500/25"
               >
                 {loading ? 'Creating account...' : 'Create account'}
