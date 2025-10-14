@@ -4,7 +4,7 @@ import { Task } from '../types';
 export interface CreateTaskData {
   title: string;
   description?: string;
-  bucketId: string;
+  bucketId?: string;
   dueDate?: string;
   priority?: 'low' | 'medium' | 'high';
   status?: 'todo' | 'in-progress' | 'completed';

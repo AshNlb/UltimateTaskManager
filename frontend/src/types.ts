@@ -20,7 +20,7 @@ export interface Bucket {
 export interface Task {
   id: string;
   userId: string;
-  bucketId: string;
+  bucketId?: string;
   title: string;
   description?: string;
   dueDate?: string;
@@ -29,7 +29,7 @@ export interface Task {
   completedAt?: string;
   createdAt: string;
   updatedAt: string;
-  bucket: Bucket;
+  bucket?: Bucket;
 }
 
 export interface ChatMessage {

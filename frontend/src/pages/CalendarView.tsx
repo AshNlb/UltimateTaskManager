@@ -59,7 +59,7 @@ export default function CalendarView() {
           <div
             key={task.id}
             className="w-1.5 h-1.5 rounded-full shadow-sm"
-            style={{ backgroundColor: task.bucket.color }}
+            style={{ backgroundColor: task.bucket?.color || '#3B82F6' }}
             title={task.title}
           />
         ))}
@@ -217,7 +217,7 @@ export default function CalendarView() {
                   <div
                     key={task.id}
                     className="group p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
-                    style={{ borderLeftWidth: '4px', borderLeftColor: task.bucket.color }}
+                    style={{ borderLeftWidth: '4px', borderLeftColor: task.bucket?.color || '#3B82F6' }}
                   >
                     <div className="flex justify-between items-start mb-2">
                       <h4 className="font-semibold text-gray-900 dark:text-white">{task.title}</h4>
@@ -229,9 +229,11 @@ export default function CalendarView() {
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 line-clamp-2">{task.description}</p>
                     )}
                     <div className="flex flex-wrap gap-2 mt-3">
-                      <span className="text-xs px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full font-medium">
-                        {task.bucket.name}
-                      </span>
+                      {task.bucket && (
+                        <span className="text-xs px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full font-medium">
+                          {task.bucket.name}
+                        </span>
+                      )}
                       <span
                         className={`text-xs px-3 py-1 rounded-full font-medium ${
                           task.priority === 'high'
