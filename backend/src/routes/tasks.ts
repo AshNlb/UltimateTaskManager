@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
 const createTaskSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
-  bucketId: z.string(),
+  bucketId: z.string().optional(),
   dueDate: z.string().optional(),
   priority: z.enum(['low', 'medium', 'high']).optional(),
   status: z.enum(['todo', 'in-progress', 'completed']).optional(),

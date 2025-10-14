@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { X, Sparkles } from 'lucide-react';
+import { X, Sparkles, Plus } from 'lucide-react';
 import { tasksAPI } from '../api/tasks';
 import { aiAPI } from '../api/ai';
+import { bucketsAPI } from '../api/buckets';
 import { Bucket, Task } from '../types';
 
 interface Props {
@@ -15,7 +16,7 @@ interface Props {
 export default function TaskModal({ task, buckets, defaultDate, onClose, onSave }: Props) {
   const [title, setTitle] = useState(task?.title || '');
   const [description, setDescription] = useState(task?.description || '');
-  const [bucketId, setBucketId] = useState(task?.bucketId || buckets[0]?.id || '');
+  const [bucketId, setBucketId] = useState(task?.bucketId || '');
   const [dueDate, setDueDate] = useState(
     task?.dueDate
       ? new Date(task.dueDate).toISOString().split('T')[0]
@@ -27,6 +28,30 @@ export default function TaskModal({ task, buckets, defaultDate, onClose, onSave 
   const [status, setStatus] = useState(task?.status || 'todo');
   const [loading, setLoading] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
+  const [showNewBucket, setShowNewBucket] = useState(false);
+  const [newBucketName, setNewBucketName] = useState('');
+  const [creatingBucket, setCreatingBucket] = useState(false);
+
+  const handleCreateBucket = async () => {
+    if (!newBucketName.trim()) return;
+    setCreatingBucket(true);
+
+    try {
+      const newBucket = await bucketsAPI.create({
+        name: newBucketName,
+        color: '#3B82F6'
+      });
+      setBucketId(newBucket.id);
+      setNewBucketName('');
+      setShowNewBucket(false);
+      onSave(); // Refresh buckets list
+    } catch (error) {
+      console.error('Failed to create bucket:', error);
+      alert('Failed to create bucket');
+    } finally {
+      setCreatingBucket(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +61,7 @@ export default function TaskModal({ task, buckets, defaultDate, onClose, onSave 
       const data = {
         title,
         description: description || undefined,
-        bucketId,
+        bucketId: bucketId || undefined,
         dueDate: dueDate || undefined,
         priority: priority as 'low' | 'medium' | 'high',
         status: status as 'todo' | 'in-progress' | 'completed',
@@ -130,20 +155,67 @@ export default function TaskModal({ task, buckets, defaultDate, onClose, onSave 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Bucket *
+                Bucket (optional)
               </label>
-              <select
-                required
-                value={bucketId}
-                onChange={(e) => setBucketId(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-              >
-                {buckets.map((bucket) => (
-                  <option key={bucket.id} value={bucket.id} className="bg-gray-800">
-                    {bucket.name}
-                  </option>
-                ))}
-              </select>
+              {!showNewBucket ? (
+                <div className="relative">
+                  <select
+                    value={bucketId}
+                    onChange={(e) => {
+                      if (e.target.value === '__new__') {
+                        setShowNewBucket(true);
+                      } else {
+                        setBucketId(e.target.value);
+                      }
+                    }}
+                    className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  >
+                    <option value="" className="bg-gray-800">No Bucket</option>
+                    {buckets.map((bucket) => (
+                      <option key={bucket.id} value={bucket.id} className="bg-gray-800">
+                        {bucket.name}
+                      </option>
+                    ))}
+                    <option value="__new__" className="bg-gray-800 text-blue-400">
+                      + Create New Bucket
+                    </option>
+                  </select>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newBucketName}
+                    onChange={(e) => setNewBucketName(e.target.value)}
+                    placeholder="New bucket name"
+                    className="flex-1 px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleCreateBucket();
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCreateBucket}
+                    disabled={!newBucketName.trim() || creatingBucket}
+                    className="px-4 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-xl transition-all duration-200"
+                  >
+                    <Plus size={20} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNewBucket(false);
+                      setNewBucketName('');
+                    }}
+                    className="px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl transition-all duration-200"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              )}
             </div>
 
             <div>
