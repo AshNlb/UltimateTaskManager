@@ -19,30 +19,43 @@ export default function AISettings() {
       const data = await aiAPI.getSettings();
       setAssistantName(data.assistantName);
       setTone(data.tone);
-    } catch (err) {
+      setError(''); // Clear any previous errors
+    } catch (err: any) {
       console.error('Failed to load AI settings:', err);
-      setError('Failed to load settings');
+      const errorMessage = err.response?.data?.error || err.message || 'Failed to load settings';
+      setError(`Error loading settings: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
   };
 
   const handleSave = async () => {
+    if (!assistantName.trim()) {
+      setError('Assistant name cannot be empty');
+      return;
+    }
+
     setSaving(true);
     setError('');
     setSuccess(false);
 
     try {
-      await aiAPI.updateSettings({
-        assistantName,
+      const updatedSettings = await aiAPI.updateSettings({
+        assistantName: assistantName.trim(),
         tone,
       });
-      setSuccess(true);
-      await loadSettings();
 
+      // Update local state with saved values
+      setAssistantName(updatedSettings.assistantName);
+      setTone(updatedSettings.tone);
+
+      setSuccess(true);
+
+      // Clear success message after 3 seconds
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to save settings');
+      console.error('Save settings error:', err);
+      setError(err.response?.data?.error || 'Failed to save settings. Please try again.');
     } finally {
       setSaving(false);
     }
