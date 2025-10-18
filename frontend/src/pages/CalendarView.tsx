@@ -37,6 +37,18 @@ export default function CalendarView() {
     }
   };
 
+  const handleStatusChange = async (taskId: string, newStatus: 'todo' | 'in-progress' | 'completed') => {
+    try {
+      await tasksAPI.update(taskId, { status: newStatus });
+      // Update local state
+      setTasks(tasks.map(task =>
+        task.id === taskId ? { ...task, status: newStatus } : task
+      ));
+    } catch (error) {
+      console.error('Failed to update task status:', error);
+    }
+  };
+
   const getTasksForDate = (date: Date) => {
     return tasks.filter((task) => {
       if (!task.dueDate) return false;
@@ -50,7 +62,7 @@ export default function CalendarView() {
   };
 
   const getTileContent = ({ date }: { date: Date }) => {
-    const dateTasks = getTasksForDate(date);
+    const dateTasks = getTasksForDate(date).filter(task => task.status !== 'completed'); // Hide completed tasks
     if (dateTasks.length === 0) return null;
 
     return (
@@ -101,6 +113,7 @@ export default function CalendarView() {
 
     return tasks.filter((task) => {
       if (!task.dueDate) return false;
+      if (task.status === 'completed') return false; // Hide completed tasks
       const taskDate = new Date(task.dueDate);
       taskDate.setHours(0, 0, 0, 0);
       return taskDate >= startDate && taskDate <= endDate;
@@ -216,11 +229,16 @@ export default function CalendarView() {
                 {rangeViewTasks.map((task) => (
                   <div
                     key={task.id}
-                    className="group p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
+                    className="group p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 hover:shadow-lg transition-all duration-300"
                     style={{ borderLeftWidth: '4px', borderLeftColor: task.bucket?.color || '#3B82F6' }}
                   >
                     <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-semibold text-gray-900 dark:text-white">{task.title}</h4>
+                      <h4
+                        className="font-semibold text-gray-900 dark:text-white cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        onClick={() => setTaskModal({ open: true, task })}
+                      >
+                        {task.title}
+                      </h4>
                       <span className="text-xs text-gray-500 dark:text-gray-400">
                         {format(new Date(task.dueDate!), 'MMM dd')}
                       </span>
@@ -256,6 +274,46 @@ export default function CalendarView() {
                       >
                         {task.status}
                       </span>
+                    </div>
+
+                    {/* Status change buttons */}
+                    <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                      {task.status !== 'in-progress' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStatusChange(task.id, 'in-progress');
+                          }}
+                          className="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                          title="Mark as in progress"
+                        >
+                          In Progress
+                        </button>
+                      )}
+                      {task.status !== 'completed' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStatusChange(task.id, 'completed');
+                          }}
+                          className="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                          title="Mark as completed"
+                        >
+                          Complete
+                        </button>
+                      )}
+                      {task.status !== 'todo' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStatusChange(task.id, 'todo');
+                          }}
+                          className="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                          title="Mark as to do"
+                        >
+                          To Do
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}

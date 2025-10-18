@@ -21,6 +21,7 @@ model User {
   buckets   Bucket[]
   tasks     Task[]
   chatHistory ChatHistory[]
+  passwordResetTokens PasswordResetToken[]
 }
 
 model Bucket {
@@ -69,4 +70,18 @@ model ChatHistory {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  used      Boolean  @default(false)
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
 }

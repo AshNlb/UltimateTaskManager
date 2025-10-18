@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, Check } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, Eye, EyeOff } from 'lucide-react';
 import { bucketsAPI } from '../api/buckets';
 import { tasksAPI } from '../api/tasks';
 import { Bucket, Task } from '../types';
@@ -11,6 +11,7 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBucket, setSelectedBucket] = useState<string | null>(null);
+  const [showCompleted, setShowCompleted] = useState(true);
   const [taskModal, setTaskModal] = useState<{ open: boolean; task?: Task }>({ open: false });
   const [bucketModal, setBucketModal] = useState<{ open: boolean; bucket?: Bucket }>({ open: false });
 
@@ -64,7 +65,11 @@ export default function Dashboard() {
   };
 
   const getTasksByBucket = (bucketId: string) => {
-    return tasks.filter((t) => t.bucketId === bucketId);
+    return tasks.filter((t) => {
+      if (t.bucketId !== bucketId) return false;
+      if (!showCompleted && t.status === 'completed') return false;
+      return true;
+    });
   };
 
   if (loading) {
@@ -91,6 +96,19 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex gap-3 w-full sm:w-auto">
+          <button
+            onClick={() => setShowCompleted(!showCompleted)}
+            className={`flex-1 sm:flex-none px-5 py-2.5 rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 font-medium ${
+              showCompleted
+                ? 'bg-gray-100 dark:bg-dark-surface text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                : 'bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 text-white'
+            }`}
+            title={showCompleted ? 'Hide completed tasks' : 'Show completed tasks'}
+          >
+            {showCompleted ? <EyeOff size={18} /> : <Eye size={18} />}
+            <span className="hidden sm:inline">{showCompleted ? 'Hide' : 'Show'} Completed</span>
+            <span className="sm:hidden">{showCompleted ? 'Hide' : 'Show'}</span>
+          </button>
           <button
             onClick={() => setBucketModal({ open: true })}
             className="flex-1 sm:flex-none px-5 py-2.5 bg-gradient-to-r from-gray-600 to-gray-700 dark:from-gray-700 dark:to-gray-800 text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 font-medium"
@@ -126,7 +144,7 @@ export default function Dashboard() {
               ? 'bg-white/20'
               : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
           }`}>
-            {tasks.length}
+            {showCompleted ? tasks.length : tasks.filter(t => t.status !== 'completed').length}
           </span>
         </button>
         {buckets.map((bucket) => {
