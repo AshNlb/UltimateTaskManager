@@ -3,7 +3,6 @@ import { aiAPI, AISettings as AISettingsType } from '../api/ai';
 import { Sparkles, Save, Bot, MessageCircle } from 'lucide-react';
 
 export default function AISettings() {
-  const [settings, setSettings] = useState<AISettingsType | null>(null);
   const [assistantName, setAssistantName] = useState('AI Assistant');
   const [tone, setTone] = useState<'professional' | 'friendly' | 'casual'>('professional');
   const [loading, setLoading] = useState(true);
@@ -18,7 +17,6 @@ export default function AISettings() {
   const loadSettings = async () => {
     try {
       const data = await aiAPI.getSettings();
-      setSettings(data);
       setAssistantName(data.assistantName);
       setTone(data.tone);
     } catch (err) {
