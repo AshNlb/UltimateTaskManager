@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { aiAPI, AISettings as AISettingsType } from '../api/ai';
+import { aiAPI } from '../api/ai';
 import { Sparkles, Save, Bot, MessageCircle } from 'lucide-react';
 
 export default function AISettings() {
