@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Calendar, LogOut, MessageSquare, Moon, Sun, Sparkles, Gamepad2 } from 'lucide-react';
+import { LayoutDashboard, Calendar, LogOut, MessageSquare, Moon, Sun, Sparkles, Gamepad2, Settings } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useTheme, ThemeMode } from '../context/ThemeContext';
 import { useState, useEffect, useRef } from 'react';
@@ -169,6 +169,19 @@ export default function Layout() {
               <MessageSquare size={20} />
               <span>AI Assistant</span>
             </button>
+            <Link
+              to="/ai-settings"
+              className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all font-medium ${
+                isActive('/ai-settings')
+                  ? `gradient-primary text-white shadow-lg ${isGame ? 'shadow-game-primary/50' : 'shadow-blue-500/30'}`
+                  : isGame
+                  ? 'text-white hover:bg-game-hover border border-game-border/20'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-hover'
+              }`}
+            >
+              <Settings size={20} />
+              <span>AI Settings</span>
+            </Link>
           </nav>
         </aside>
 

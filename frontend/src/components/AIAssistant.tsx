@@ -10,10 +10,12 @@ export default function AIAssistant({ onClose }: Props) {
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState<Array<{ message: string; response: string }>>([]);
   const [loading, setLoading] = useState(false);
+  const [assistantName, setAssistantName] = useState('AI Assistant');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadHistory();
+    loadSettings();
   }, []);
 
   useEffect(() => {
@@ -26,6 +28,15 @@ export default function AIAssistant({ onClose }: Props) {
       setMessages(history.slice(0, 10).reverse());
     } catch (error) {
       console.error('Failed to load chat history:', error);
+    }
+  };
+
+  const loadSettings = async () => {
+    try {
+      const settings = await aiAPI.getSettings();
+      setAssistantName(settings.assistantName);
+    } catch (error) {
+      console.error('Failed to load AI settings:', error);
     }
   };
 
@@ -67,7 +78,7 @@ export default function AIAssistant({ onClose }: Props) {
           <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
             <Sparkles className="text-white" size={20} />
           </div>
-          <h3 className="font-bold text-white text-lg">AI Assistant</h3>
+          <h3 className="font-bold text-white text-lg">{assistantName}</h3>
         </div>
         <button
           onClick={onClose}
@@ -85,10 +96,10 @@ export default function AIAssistant({ onClose }: Props) {
               <Sparkles className="text-white" size={32} />
             </div>
             <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-              Hi, I am your assistant
+              Hi, I'm {assistantName}
             </h4>
             <p className="text-gray-600 dark:text-gray-400 mb-6 px-4">
-              I will help you keep everything under control and get things done!
+              I'll help you keep everything under control and get things done!
             </p>
             <div className="space-y-3 max-w-md mx-auto">
               {suggestedQuestions.map((q, i) => (

@@ -7,6 +7,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import CalendarView from './pages/CalendarView';
+import AISettings from './pages/AISettings';
 import Layout from './components/Layout';
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
           <Route element={isAuthenticated ? <Layout /> : <Navigate to="/login" />}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/calendar" element={<CalendarView />} />
+            <Route path="/ai-settings" element={<AISettings />} />
           </Route>
         </Routes>
       </BrowserRouter>

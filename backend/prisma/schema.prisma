@@ -22,6 +22,7 @@ model User {
   tasks     Task[]
   chatHistory ChatHistory[]
   passwordResetTokens PasswordResetToken[]
+  aiSettings AISettings?
 }
 
 model Bucket {
@@ -63,13 +64,14 @@ model Task {
 model ChatHistory {
   id        String   @id @default(uuid())
   userId    String
-  message   String
-  response  String
+  message   String   @db.VarChar(1000)  // Limit to 1000 chars to save space
+  response  String   @db.VarChar(2000)  // Limit to 2000 chars to save space
   createdAt DateTime @default(now())
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([createdAt])  // Index for efficient cleanup queries
 }
 
 model PasswordResetToken {
@@ -84,4 +86,17 @@ model PasswordResetToken {
 
   @@index([userId])
   @@index([token])
+}
+
+model AISettings {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  assistantName   String   @default("AI Assistant")
+  tone            String   @default("professional") // professional, friendly, casual
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

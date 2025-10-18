@@ -1,9 +1,22 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { generateAIResponse, enhanceTaskWithAI } from '../services/aiService';
+import { z } from 'zod';
+import { cleanupExpiredTokens, cleanupOldChatHistory } from '../utils/cleanup';
 
 const router = express.Router();
 const prisma = new PrismaClient();
+
+// Run cleanup on server startup
+cleanupExpiredTokens();
+cleanupOldChatHistory();
+
+// Schedule cleanup every 24 hours
+setInterval(() => {
+  cleanupExpiredTokens();
+  cleanupOldChatHistory();
+}, 24 * 60 * 60 * 1000);
 
 // Rate limiting: 10 questions per user per day
 async function checkRateLimit(userId: string): Promise<{ allowed: boolean; remaining: number }> {
@@ -29,7 +42,7 @@ async function checkRateLimit(userId: string): Promise<{ allowed: boolean; remai
   return { allowed, remaining };
 }
 
-// Simple Q&A assistant (uses task data to answer questions)
+// AI-powered Q&A assistant with task context and web search
 router.post('/ask', authenticate, async (req: AuthRequest, res) => {
   try {
     const { question } = req.body;
@@ -44,7 +57,7 @@ router.post('/ask', authenticate, async (req: AuthRequest, res) => {
     if (!allowed) {
       return res.status(429).json({
         error: 'Daily limit reached. You can ask up to 10 questions per day. Try again tomorrow!',
-        remaining: 0
+        remaining: 0,
       });
     }
 
@@ -55,139 +68,63 @@ router.post('/ask', authenticate, async (req: AuthRequest, res) => {
       orderBy: { dueDate: 'asc' },
     });
 
-    // Simple rule-based responses (can be enhanced with actual LLM)
-    let answer = '';
-    const lowerQuestion = question.toLowerCase().trim();
+    // Get AI settings or use defaults
+    let aiSettings = await prisma.aISettings.findUnique({
+      where: { userId: req.userId! },
+    });
 
-    // Check for count/total tasks
-    if (lowerQuestion.match(/how many|total|count|all task/)) {
-      const total = tasks.length;
-      const completed = tasks.filter(t => t.status === 'completed').length;
-      const pending = total - completed;
-      answer = `You have ${total} total tasks: ${completed} completed and ${pending} pending.`;
+    if (!aiSettings) {
+      // Create default settings if they don't exist
+      aiSettings = await prisma.aISettings.create({
+        data: {
+          userId: req.userId!,
+          assistantName: 'AI Assistant',
+          tone: 'professional',
+        },
+      });
     }
-    // Check for today's tasks
-    else if (lowerQuestion.match(/today|due today/)) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
 
-      const todayTasks = tasks.filter(t => {
-        if (!t.dueDate) return false;
-        const dueDate = new Date(t.dueDate);
-        dueDate.setHours(0, 0, 0, 0);
-        return dueDate >= today && dueDate < tomorrow;
+    // Generate AI response using the new service
+    const answer = await generateAIResponse(question, tasks, {
+      assistantName: aiSettings.assistantName,
+      tone: aiSettings.tone,
+    });
+
+    // Auto-cleanup: Keep only last 50 messages per user to save storage
+    const messageCount = await prisma.chatHistory.count({
+      where: { userId: req.userId! },
+    });
+
+    if (messageCount >= 50) {
+      // Delete oldest messages keeping only the 49 most recent
+      const oldMessages = await prisma.chatHistory.findMany({
+        where: { userId: req.userId! },
+        orderBy: { createdAt: 'asc' },
+        take: messageCount - 49,
+        select: { id: true },
       });
 
-      if (todayTasks.length === 0) {
-        answer = 'You have no tasks due today. 🎉';
-      } else {
-        answer = `You have ${todayTasks.length} task(s) due today:\n${todayTasks.map(t => `• ${t.title} (${t.bucket.name})`).join('\n')}`;
+      if (oldMessages.length > 0) {
+        await prisma.chatHistory.deleteMany({
+          where: {
+            id: { in: oldMessages.map(m => m.id) },
+          },
+        });
       }
     }
-    // Check for tomorrow's tasks
-    else if (lowerQuestion.match(/tomorrow|due tomorrow/)) {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(0, 0, 0, 0);
-      const dayAfter = new Date(tomorrow);
-      dayAfter.setDate(dayAfter.getDate() + 1);
 
-      const tomorrowTasks = tasks.filter(t => {
-        if (!t.dueDate) return false;
-        const dueDate = new Date(t.dueDate);
-        dueDate.setHours(0, 0, 0, 0);
-        return dueDate >= tomorrow && dueDate < dayAfter;
-      });
-
-      if (tomorrowTasks.length === 0) {
-        answer = 'You have no tasks due tomorrow. 🎉';
-      } else {
-        answer = `You have ${tomorrowTasks.length} task(s) due tomorrow:\n${tomorrowTasks.map(t => `• ${t.title} (${t.bucket.name})`).join('\n')}`;
-      }
-    }
-    // Check for this week's tasks
-    else if (lowerQuestion.match(/week|this week|next 7 days/)) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const weekEnd = new Date(today);
-      weekEnd.setDate(weekEnd.getDate() + 7);
-
-      const weekTasks = tasks.filter(t => {
-        if (!t.dueDate) return false;
-        const dueDate = new Date(t.dueDate);
-        return dueDate >= today && dueDate <= weekEnd;
-      });
-
-      if (weekTasks.length === 0) {
-        answer = 'You have no tasks due this week. 🎉';
-      } else {
-        answer = `You have ${weekTasks.length} task(s) due this week:\n${weekTasks.map(t => `• ${t.title} (${t.bucket.name}, ${new Date(t.dueDate!).toLocaleDateString()})`).join('\n')}`;
-      }
-    }
-    // Check for high priority tasks
-    else if (lowerQuestion.match(/high|priority|urgent|important/)) {
-      const highPriorityTasks = tasks.filter(t => t.priority === 'high' && t.status !== 'completed');
-
-      if (highPriorityTasks.length === 0) {
-        answer = 'You have no high-priority tasks. Great! 🎉';
-      } else {
-        answer = `You have ${highPriorityTasks.length} high-priority task(s):\n${highPriorityTasks.map(t => `• ${t.title} (${t.bucket.name})`).join('\n')}`;
-      }
-    }
-    // Check for overdue tasks
-    else if (lowerQuestion.match(/overdue|late|past due/)) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const overdueTasks = tasks.filter(t => {
-        if (!t.dueDate || t.status === 'completed') return false;
-        const dueDate = new Date(t.dueDate);
-        dueDate.setHours(0, 0, 0, 0);
-        return dueDate < today;
-      });
-
-      if (overdueTasks.length === 0) {
-        answer = 'You have no overdue tasks. Great job! 🎉';
-      } else {
-        answer = `You have ${overdueTasks.length} overdue task(s):\n${overdueTasks.map(t => `• ${t.title} (${t.bucket.name}, was due ${new Date(t.dueDate!).toLocaleDateString()})`).join('\n')}`;
-      }
-    }
-    // Check for completed tasks
-    else if (lowerQuestion.match(/completed|done|finished/)) {
-      const completedTasks = tasks.filter(t => t.status === 'completed');
-      if (completedTasks.length === 0) {
-        answer = 'You have no completed tasks yet. Keep going! 💪';
-      } else {
-        answer = `You have completed ${completedTasks.length} task(s):\n${completedTasks.slice(0, 10).map(t => `• ${t.title} (${t.bucket.name})`).join('\n')}${completedTasks.length > 10 ? '\n...and more!' : ''}`;
-      }
-    }
-    // Check for pending/todo tasks
-    else if (lowerQuestion.match(/pending|todo|not done|incomplete/)) {
-      const pendingTasks = tasks.filter(t => t.status !== 'completed');
-      if (pendingTasks.length === 0) {
-        answer = 'You have no pending tasks. All done! 🎉';
-      } else {
-        answer = `You have ${pendingTasks.length} pending task(s):\n${pendingTasks.slice(0, 10).map(t => `• ${t.title} (${t.bucket.name})`).join('\n')}${pendingTasks.length > 10 ? '\n...and more!' : ''}`;
-      }
-    }
-    // Default help message
-    else {
-      answer = `I can help you with questions about your tasks. Try asking:\n\n• "How many tasks do I have?"\n• "What's due today?"\n• "What's due this week?"\n• "Show me high-priority tasks"\n• "Do I have overdue tasks?"\n• "Show completed tasks"\n• "What tasks are pending?"`;
-    }
-
-    // Save chat history
+    // Save chat history (truncate long messages to save space)
     await prisma.chatHistory.create({
       data: {
         userId: req.userId!,
-        message: question,
-        response: answer,
+        message: question.substring(0, 1000), // Limit to 1000 chars
+        response: answer.substring(0, 2000), // Limit to 2000 chars
       },
     });
 
     res.json({
       answer,
-      remainingQuestions: remaining - 1
+      remainingQuestions: remaining - 1,
     });
   } catch (error) {
     console.error(error);
@@ -195,7 +132,7 @@ router.post('/ask', authenticate, async (req: AuthRequest, res) => {
   }
 });
 
-// Enhance task (simple version - can be enhanced with actual LLM)
+// AI-powered task enhancement
 router.post('/enhance-task', authenticate, async (req: AuthRequest, res) => {
   try {
     const { taskId } = req.body;
@@ -206,26 +143,33 @@ router.post('/enhance-task', authenticate, async (req: AuthRequest, res) => {
 
     const task = await prisma.task.findFirst({
       where: { id: taskId, userId: req.userId! },
+      include: { bucket: true },
     });
 
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
     }
 
-    // Simple enhancement suggestions (can be replaced with actual LLM)
-    const suggestions = {
-      enhancedTitle: task.title,
-      enhancedDescription: task.description
-        ? `${task.description}\n\nSuggested steps:\n1. Break down into smaller tasks\n2. Identify required resources\n3. Set milestones\n4. Review progress regularly`
-        : 'Consider adding more details about:\n- Specific goals\n- Resources needed\n- Success criteria\n- Potential obstacles',
-      suggestedSubtasks: [
-        'Research and planning',
-        'Implementation',
-        'Review and testing',
-        'Finalization',
-      ],
-      estimatedDuration: 'Based on the task complexity, this might take 2-4 hours.',
-    };
+    // Get AI settings or use defaults
+    let aiSettings = await prisma.aISettings.findUnique({
+      where: { userId: req.userId! },
+    });
+
+    if (!aiSettings) {
+      aiSettings = await prisma.aISettings.create({
+        data: {
+          userId: req.userId!,
+          assistantName: 'AI Assistant',
+          tone: 'professional',
+        },
+      });
+    }
+
+    // Use AI service to enhance the task
+    const suggestions = await enhanceTaskWithAI(task, {
+      assistantName: aiSettings.assistantName,
+      tone: aiSettings.tone,
+    });
 
     res.json(suggestions);
   } catch (error) {
@@ -234,13 +178,13 @@ router.post('/enhance-task', authenticate, async (req: AuthRequest, res) => {
   }
 });
 
-// Get chat history
+// Get chat history (limited to last 20 for display to save bandwidth)
 router.get('/chat-history', authenticate, async (req: AuthRequest, res) => {
   try {
     const history = await prisma.chatHistory.findMany({
       where: { userId: req.userId! },
       orderBy: { createdAt: 'desc' },
-      take: 50,
+      take: 20, // Only load last 20 messages for display
     });
 
     res.json(history);
@@ -255,6 +199,71 @@ router.get('/remaining-questions', authenticate, async (req: AuthRequest, res) =
     const { remaining } = await checkRateLimit(req.userId!);
     res.json({ remaining, dailyLimit: 10 });
   } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get AI settings
+router.get('/settings', authenticate, async (req: AuthRequest, res) => {
+  try {
+    let settings = await prisma.aISettings.findUnique({
+      where: { userId: req.userId! },
+    });
+
+    if (!settings) {
+      // Create default settings if they don't exist
+      settings = await prisma.aISettings.create({
+        data: {
+          userId: req.userId!,
+          assistantName: 'AI Assistant',
+          tone: 'professional',
+        },
+      });
+    }
+
+    res.json(settings);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Update AI settings
+const updateSettingsSchema = z.object({
+  assistantName: z.string().min(1).max(50).optional(),
+  tone: z.enum(['professional', 'friendly', 'casual']).optional(),
+});
+
+router.put('/settings', authenticate, async (req: AuthRequest, res) => {
+  try {
+    const data = updateSettingsSchema.parse(req.body);
+
+    // Get or create settings
+    let settings = await prisma.aISettings.findUnique({
+      where: { userId: req.userId! },
+    });
+
+    if (!settings) {
+      settings = await prisma.aISettings.create({
+        data: {
+          userId: req.userId!,
+          assistantName: data.assistantName || 'AI Assistant',
+          tone: data.tone || 'professional',
+        },
+      });
+    } else {
+      settings = await prisma.aISettings.update({
+        where: { userId: req.userId! },
+        data,
+      });
+    }
+
+    res.json(settings);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors });
+    }
+    console.error(error);
     res.status(500).json({ error: 'Server error' });
   }
 });
