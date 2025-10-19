@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,18 +8,17 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  buckets   Bucket[]
-  tasks     Task[]
-  chatHistory ChatHistory[]
+  id                  String               @id @default(uuid())
+  email               String               @unique
+  password            String
+  name                String
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  buckets             Bucket[]
+  chatHistory         ChatHistory[]
+  tasks               Task[]
   passwordResetTokens PasswordResetToken[]
-  aiSettings AISettings?
+  aiSettings          AISettings?
 }
 
 model Bucket {
@@ -33,7 +29,6 @@ model Bucket {
   orderIndex Int      @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   tasks      Task[]
 
@@ -47,14 +42,13 @@ model Task {
   title       String
   description String?
   dueDate     DateTime?
-  priority    String    @default("medium") // low, medium, high
-  status      String    @default("todo")   // todo, in-progress, completed
+  priority    String    @default("medium")
+  status      String    @default("todo")
   completedAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   bucket      Bucket?   @relation(fields: [bucketId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([bucketId])
@@ -64,14 +58,13 @@ model Task {
 model ChatHistory {
   id        String   @id @default(uuid())
   userId    String
-  message   String   @db.VarChar(1000)  // Limit to 1000 chars to save space
-  response  String   @db.VarChar(2000)  // Limit to 2000 chars to save space
+  message   String   @db.VarChar(1000)
+  response  String   @db.VarChar(2000)
   createdAt DateTime @default(now())
-
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([createdAt])  // Index for efficient cleanup queries
+  @@index([createdAt])
 }
 
 model PasswordResetToken {
@@ -89,14 +82,14 @@ model PasswordResetToken {
 }
 
 model AISettings {
-  id              String   @id @default(uuid())
-  userId          String   @unique
-  assistantName   String   @default("AI Assistant")
-  tone            String   @default("professional") // professional, friendly, casual
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  assistantName String   @default("AI Assistant")
+  tone          String   @default("professional")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
