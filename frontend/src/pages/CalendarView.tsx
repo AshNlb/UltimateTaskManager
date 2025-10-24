@@ -8,14 +8,14 @@ import TaskModal from '../components/TaskModal';
 import { bucketsAPI } from '../api/buckets';
 import { Bucket } from '../types';
 
-type ViewMode = '3days' | 'week' | 'month' | 'quarter';
+type ViewMode = 'day' | '3days' | 'week' | 'month' | 'quarter';
 
 export default function CalendarView() {
   const [date, setDate] = useState(new Date());
   const [tasks, setTasks] = useState<Task[]>([]);
   const [buckets, setBuckets] = useState<Bucket[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('3days');
+  const [viewMode, setViewMode] = useState<ViewMode>('day');
   const [taskModal, setTaskModal] = useState<{ open: boolean; task?: Task; date?: Date }>({ open: false });
 
   useEffect(() => {
@@ -84,6 +84,7 @@ export default function CalendarView() {
 
   const handleDateClick = (date: Date) => {
     setSelectedDate(date);
+    setViewMode('day'); // Switch to day view when clicking a date
   };
 
   const getTasksForDateRange = () => {
@@ -93,6 +94,13 @@ export default function CalendarView() {
     let endDate: Date;
 
     switch (viewMode) {
+      case 'day':
+        // Use selected date or today
+        const dayToShow = selectedDate || today;
+        dayToShow.setHours(0, 0, 0, 0);
+        startDate = dayToShow;
+        endDate = dayToShow;
+        break;
       case '3days':
         startDate = today;
         endDate = addDays(today, 2);
@@ -113,7 +121,7 @@ export default function CalendarView() {
 
     return tasks.filter((task) => {
       if (!task.dueDate) return false;
-      if (task.status === 'completed') return false; // Hide completed tasks
+      if (viewMode !== 'day' && task.status === 'completed') return false; // Show completed tasks in day view
       const taskDate = new Date(task.dueDate);
       taskDate.setHours(0, 0, 0, 0);
       return taskDate >= startDate && taskDate <= endDate;
@@ -123,6 +131,8 @@ export default function CalendarView() {
   const getViewTitle = () => {
     const today = new Date();
     switch (viewMode) {
+      case 'day':
+        return format(selectedDate || today, 'EEEE, MMMM dd, yyyy');
       case '3days':
         return 'Next 3 Days';
       case 'week':
@@ -169,7 +179,17 @@ export default function CalendarView() {
             </h3>
 
             {/* View mode toggle */}
-            <div className="grid grid-cols-2 gap-2 mb-4">
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              <button
+                onClick={() => setViewMode('day')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  viewMode === 'day'
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                Day
+              </button>
               <button
                 onClick={() => setViewMode('3days')}
                 className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
@@ -202,7 +222,7 @@ export default function CalendarView() {
               </button>
               <button
                 onClick={() => setViewMode('quarter')}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all col-span-2 ${
                   viewMode === 'quarter'
                     ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
